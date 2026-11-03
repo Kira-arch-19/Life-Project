@@ -1,0 +1,27 @@
+
+name: Life Project CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Unity Structure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Unity project
+        run: |
+          test -d Assets
+          test -f Packages/manifest.json
+          test -f ProjectSettings/ProjectVersion.txt
+          echo "LIFE PROJECT validation passed!"
