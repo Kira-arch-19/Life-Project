@@ -1,0 +1,38 @@
+
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.userprefs
+
+# File temporanei
+*.tmp
+*.bak
+*.log
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Credenziali e segreti
+.env
+.env.*
+!.env.example
+*.pfx
+*.key
