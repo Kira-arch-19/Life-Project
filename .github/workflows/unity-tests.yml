@@ -29,7 +29,6 @@ jobs:
         with:
           projectPath: .
           testMode: editmode
-          coverageEnabled: false
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload test results
