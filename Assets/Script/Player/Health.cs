@@ -1,16 +1,12 @@
-using NUnit.Framework;
+
 using UnityEngine;
 
 public class Health : MonoBehaviour
 {
-    int health = 100;
-    void Start()
+    public int CurrentHealth { get; private set; } = 100;
+
+    public void TakeDamage(int damage)
     {
-        TakeDamage(20);
-        Assert.That(health,Is.EqualTo(80));
-    }
-    private void TakeDamage(int Damage)
-    {
-        health-=Damage;
+        CurrentHealth -= damage;
     }
 }
