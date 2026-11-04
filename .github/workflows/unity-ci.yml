@@ -4,8 +4,7 @@ name: Life Project CI
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,7 +12,11 @@ permissions:
 jobs:
   validate:
     name: Validate Unity Structure
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Windows, X64, unity6]
+
+    defaults:
+      run:
+        shell: pwsh
 
     steps:
       - name: Checkout repository
@@ -21,7 +24,27 @@ jobs:
 
       - name: Verify Unity project
         run: |
-          test -d Assets
-          test -f Packages/manifest.json
-          test -f ProjectSettings/ProjectVersion.txt
-          echo "LIFE PROJECT validation passed!"
+          if (!(Test-Path "Assets" -PathType Container)) {
+            throw "Assets directory not found"
+          }
+
+          if (!(Test-Path "Packages/manifest.json" -PathType Leaf)) {
+            throw "manifest.json not found"
+          }
+
+          if (!(Test-Path "ProjectSettings/ProjectVersion.txt" -PathType Leaf)) {
+            throw "ProjectVersion.txt not found"
+          }
+
+          Write-Host "LIFE PROJECT validation passed!"
+
+      - name: Check Unity installation
+        run: |
+          $unityPath = "C:\Program Files\Unity\Hub\Editor"
+
+          if (!(Test-Path $unityPath)) {
+            throw "Unity installation not found"
+          }
+
+          Get-ChildItem $unityPath -Directory |
+            Select-Object Name, FullName

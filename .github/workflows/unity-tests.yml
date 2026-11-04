@@ -8,33 +8,106 @@ on:
 
 permissions:
   contents: read
-  checks: write
 
 jobs:
   unity-tests:
     name: Unity EditMode Tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Windows, X64, unity6]
+
+    defaults:
+      run:
+        shell: pwsh
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Run Unity tests
-        id: tests
-        uses: game-ci/unity-test-runner@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          projectPath: .
-          testMode: editmode
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          lfs: true
+
+      - name: Find Unity 6
+        id: unity
+        run: |
+          $versionFile = "ProjectSettings/ProjectVersion.txt"
+          if (!(Test-Path $versionFile)) {
+            throw "Unity project non trovato."
+          }
+
+          $versionLine = Get-Content $versionFile |
+            Where-Object { $_ -match "^m_EditorVersion:\s*(.+)" } |
+            Select-Object -First 1
+
+          if (!$versionLine) {
+            throw "Versione Unity non trovata."
+          }
+
+          $version = ($versionLine -split ":\s*", 2)[1].Trim()
+
+          $unity = "C:\Program Files\Unity\Hub\Editor\$version\Editor\Unity.exe"
+
+          if (!(Test-Path $unity)) {
+            throw "Installa Unity $version tramite Unity Hub."
+          }
+
+          "editor=$unity" >> $env:GITHUB_OUTPUT
+          Write-Host "Unity trovato: $unity"
+
+      - name: Run Unity EditMode tests
+        id: tests
+        run: |
+          $results = Join-Path $env:RUNNER_TEMP "unity-results"
+          New-Item -ItemType Directory -Force -Path $results | Out-Null
+
+          $xml = Join-Path $results "results.xml"
+          $log = Join-Path $results "unity.log"
+          $unity = '${{ steps.unity.outputs.editor }}'
+
+          $arguments = @(
+            "-batchmode"
+            "-nographics"
+            "-projectPath"
+            "$env:GITHUB_WORKSPACE"
+            "-runTests"
+            "-testPlatform"
+            "EditMode"
+            "-testResults"
+            "$xml"
+            "-logFile"
+            "$log"
+          )
+
+          $process = Start-Process `
+            -FilePath $unity `
+            -ArgumentList $arguments `
+            -Wait -PassThru
+
+          if (Test-Path $log) {
+            Get-Content $log -Tail 100
+          }
+
+          if ($process.ExitCode -ne 0) {
+            throw "Unity tests falliti. Exit code: $($process.ExitCode)"
+          }
+
+          if (!(Test-Path $xml)) {
+            throw "File risultati test non generato."
+          }
+
+          [xml]$report = Get-Content $xml
+          $root = $report.DocumentElement
+
+          Write-Host "Test completati:"
+          Write-Host "Total: $($root.GetAttribute('total'))"
+          Write-Host "Passed: $($root.GetAttribute('passed'))"
+          Write-Host "Failed: $($root.GetAttribute('failed'))"
+
+          if ([int]$root.GetAttribute('failed') -gt 0) {
+            throw "Uno o piu test Unity sono falliti."
+          }
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: unity-test-results
-          path: ${{ steps.tests.outputs.artifactsPath }}
-          if-no-files-found: ignore
+          path: ${{ runner.temp }}/unity-results/
+          if-no-files-found: warn
