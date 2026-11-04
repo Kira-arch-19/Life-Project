@@ -1,37 +1,65 @@
 
+# ============================================================
+# LIFE PROJECT - UNITY EDITMODE TESTS
+# ============================================================
+# Esegue test automatici C# con Unity 6.
+# Utilizza il runner Windows self-hosted.
+# Non utilizza GameCI, Docker o file di licenza .ulf.
+# ============================================================
+
 name: Life Project Unity Tests
 
+# Avvio automatico con push su main
+# oppure manualmente da GitHub Actions.
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+# Permessi minimi necessari.
 permissions:
   contents: read
 
 jobs:
   unity-tests:
+
     name: Unity EditMode Tests
+
+    # Runner Windows personale.
     runs-on: [self-hosted, Windows, X64, unity6]
 
+    # Durata massima dell'intero job.
+    timeout-minutes: 20
+
+    # Utilizza Windows PowerShell 5.1.
     defaults:
       run:
         shell: powershell
 
     steps:
+
+      # ======================================================
+      # STEP 1 - SCARICARE IL REPOSITORY
+      # ======================================================
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           lfs: true
 
+      # ======================================================
+      # STEP 2 - INDIVIDUARE UNITY
+      # ======================================================
       - name: Find Unity 6
         id: unity
         run: |
+          # File che contiene la versione dell'Editor.
           $versionFile = "ProjectSettings/ProjectVersion.txt"
+
           if (!(Test-Path $versionFile)) {
-            throw "Unity project non trovato."
+            throw "Progetto Unity non trovato."
           }
 
+          # Recupera la versione utilizzata dal progetto.
           $versionLine = Get-Content $versionFile |
             Where-Object { $_ -match "^m_EditorVersion:\s*(.+)" } |
             Select-Object -First 1
@@ -42,70 +70,151 @@ jobs:
 
           $version = ($versionLine -split ":\s*", 2)[1].Trim()
 
+          # Percorso dell'Editor installato su Windows.
           $unity = "C:\Program Files\Unity\Hub\Editor\$version\Editor\Unity.exe"
 
           if (!(Test-Path $unity)) {
-            throw "Installa Unity $version tramite Unity Hub."
+            throw "Unity $version non installato."
           }
 
-          "editor=$unity" >> $env:GITHUB_OUTPUT
+          # Passa il percorso allo step successivo.
+          "editor=$unity" | Out-File `
+            -FilePath $env:GITHUB_OUTPUT `
+            -Encoding utf8 `
+            -Append
+
           Write-Host "Unity trovato: $unity"
 
+      # ======================================================
+      # STEP 3 - ESEGUIRE I TEST EDITMODE
+      # ======================================================
       - name: Run Unity EditMode tests
         id: tests
         run: |
+          # Cartella temporanea dei risultati.
           $results = Join-Path $env:RUNNER_TEMP "unity-results"
-          New-Item -ItemType Directory -Force -Path $results | Out-Null
 
+          New-Item -ItemType Directory `
+            -Force -Path $results | Out-Null
+
+          # Percorsi dei file di log e report.
           $xml = Join-Path $results "results.xml"
           $log = Join-Path $results "unity.log"
+
+          # Rimuove eventuali risultati precedenti.
+          Remove-Item $xml, $log `
+            -Force -ErrorAction SilentlyContinue
+
+          # Recupera il percorso dell'Editor Unity.
           $unity = '${{ steps.unity.outputs.editor }}'
 
+          # Prepara gli argomenti di avvio.
           $arguments = @(
             "-batchmode"
             "-nographics"
             "-projectPath"
-            "$env:GITHUB_WORKSPACE"
+            "`"$env:GITHUB_WORKSPACE`""
             "-runTests"
             "-testPlatform"
             "EditMode"
             "-testResults"
-            "$xml"
+            "`"$xml`""
             "-logFile"
-            "$log"
+            "`"$log`""
           )
 
+          Write-Host "Avvio Unity EditMode..."
+          Write-Host "Progetto: $env:GITHUB_WORKSPACE"
+
+          # Avvia Unity senza usare Start-Process -Wait.
+          # Evita di aspettare automaticamente tutti
+          # i processi figli dell'Editor.
           $process = Start-Process `
             -FilePath $unity `
             -ArgumentList $arguments `
-            -Wait -PassThru
+            -PassThru
 
+          Write-Host "Unity PID: $($process.Id)"
+
+          # Attende al massimo 15 minuti.
+          $finished = $process.WaitForExit(900000)
+
+          # Se Unity supera il limite, registra l'errore.
+          if (-not $finished) {
+            Write-Host "Timeout Unity: 15 minuti superati."
+
+            if (Test-Path $log) {
+              Get-Content $log -Tail 100
+            }
+
+            # Termina il processo principale avviato.
+            Stop-Process -Id $process.Id `
+              -Force -ErrorAction SilentlyContinue
+
+            throw "Unity non ha terminato entro 15 minuti."
+          }
+
+          # Recupera il codice di uscita.
+          $exitCode = $process.ExitCode
+
+          Write-Host "Unity terminato. Exit code: $exitCode"
+
+          # Mostra il log di Unity.
           if (Test-Path $log) {
             Get-Content $log -Tail 100
           }
 
-          if ($process.ExitCode -ne 0) {
-            throw "Unity tests falliti. Exit code: $($process.ExitCode)"
+          # Verifica se Unity è terminato con errore.
+          if ($exitCode -ne 0) {
+            throw "Unity terminato con codice $exitCode"
           }
 
+          # Controlla il file dei risultati.
           if (!(Test-Path $xml)) {
-            throw "File risultati test non generato."
+            throw "Nessun report XML generato."
           }
 
+          # Legge il report NUnit.
           [xml]$report = Get-Content $xml
           $root = $report.DocumentElement
 
-          Write-Host "Test completati:"
-          Write-Host "Total: $($root.GetAttribute('total'))"
-          Write-Host "Passed: $($root.GetAttribute('passed'))"
-          Write-Host "Failed: $($root.GetAttribute('failed'))"
+          # Recupera le statistiche.
+          $total = [int]$root.GetAttribute("total")
+          $passed = [int]$root.GetAttribute("passed")
+          $failed = [int]$root.GetAttribute("failed")
 
-          if ([int]$root.GetAttribute('failed') -gt 0) {
-            throw "Uno o piu test Unity sono falliti."
+          Write-Host "=============================="
+          Write-Host "LIFE PROJECT - TEST RESULTS"
+          Write-Host "=============================="
+          Write-Host "Total:  $total"
+          Write-Host "Passed: $passed"
+          Write-Host "Failed: $failed"
+
+          # Non considera valida una run senza test.
+          if ($total -eq 0) {
+            throw "Nessun test EditMode trovato."
           }
 
+          # Interrompe il job se ci sono test falliti.
+          if ($failed -gt 0) {
+            throw "$failed test falliti."
+          }
+
+          # Controlla che tutti i test siano passati.
+          if ($passed -ne $total) {
+            throw "Non tutti i test risultano superati."
+          }
+
+          Write-Host "LIFE PROJECT: tutti i test superati!"
+
+      # ======================================================
+      # STEP 4 - CARICARE I RISULTATI SU GITHUB
+      # ======================================================
       - name: Upload test results
+
+        # Eseguito anche quando lo step precedente fallisce.
         if: always()
+
         uses: actions/upload-artifact@v4
         with:
           name: unity-test-results
