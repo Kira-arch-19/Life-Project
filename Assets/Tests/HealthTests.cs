@@ -67,7 +67,7 @@ public class HealthTests
     }
 
     [Test]
-    public void Heal_RestoresRequestedAmount()
+    public void sHeal_RestoresRequestedAmount()
     {
         health.TakeDamage(40);
 
