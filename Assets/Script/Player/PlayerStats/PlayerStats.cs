@@ -33,9 +33,15 @@ public class PlayerStats : MonoBehaviour
 
     public Health Health { get; private set; }
     public Speed MvSpeed {get; private set;}
+    public Attack AttackStats { get; private set; }
+    public Defense DefenseStats { get; private set; }
     private void Awake()
     {
-        Health = new Health(BaseMaxHealth);
-        MvSpeed = new Speed(MovementSpeed);
+    Health = new Health(BaseMaxHealth);
+    MvSpeed = new Speed(MovementSpeed);
+
+    AttackStats = new Attack(Attack);
+    DefenseStats = new Defense(Defense);
     }
+
 }
