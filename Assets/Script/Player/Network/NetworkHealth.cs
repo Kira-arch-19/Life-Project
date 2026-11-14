@@ -90,19 +90,4 @@ public class NetworkHealth : NetworkBehaviour
         currentHealth.Value = playerStats.Health.CurrentHealth;
         maxHealth.Value = playerStats.Health.GetMaxHealth();
     }
-
-    // Comando temporaneo per provare il danno dal server nell'Editor.
-    [ContextMenu("Test/Infliggi 20 danni sul server")]
-    private void TestDamage()
-    {
-        TakeDamage(20);
-
-        if (IsSpawned && IsServer)
-        {
-            Debug.Log(
-                $"Player {OwnerClientId}: {CurrentHealth}/{MaxHealth} HP",
-                this
-            );
-        }
-    }
 }
