@@ -1,31 +1,42 @@
-using NUnit.Framework;
-using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 public class PlayerAestheticsManager : MonoBehaviour
 {
-    
+    public List<AestheticCategory> aestheticCategories = new();
+    public Dictionary<AestheticType, int> selectedIDs = new();
 
-    public List<AestheticCategory> aestheticCategories = new List<AestheticCategory>();
-    public Dictionary<AestheticType, int> selectedIDs = new Dictionary<AestheticType, int>();
-    
+    private void Awake()
+    {
+        foreach (AestheticCategory category in aestheticCategories)
+        {
+            if (category == null || category.spriteRenderer == null ||
+                category.spriteList == null || category.spriteList.Count == 0)
+                continue;
+
+            int id = selectedIDs.TryGetValue(category.aestheticType, out int selectedId)
+                ? selectedId
+                : 0;
+
+            SetAesthetic(category.aestheticType, id);
+        }
+    }
 
     public void SetAesthetic(AestheticType type, int id)
     {
-        AestheticCategory category = aestheticCategories.FirstOrDefault(c => c.aestheticType == type);
-        if(category == null || id < 0 || id >= category.spriteList.Count)
+        AestheticCategory category = aestheticCategories.FirstOrDefault(
+            entry => entry != null && entry.aestheticType == type);
+
+        if (category?.spriteList == null || id < 0 || id >= category.spriteList.Count)
         {
-            Debug.LogError($"Invalid aesthetic type or ID: {type}, {id}");
+            Debug.LogError($"Categoria o ID non valido: {type}, {id}", this);
             return;
         }
+
         selectedIDs[type] = id;
 
+        if (category.spriteRenderer != null)
+            category.spriteRenderer.sprite = category.spriteList[id];
     }
-    private int getAestheticID(AestheticType type)
-    {
-        return selectedIDs.TryGetValue(type, out int id) ? id : 0;
-        
-    }
-    
 }

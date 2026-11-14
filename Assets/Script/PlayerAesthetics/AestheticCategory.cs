@@ -8,6 +8,7 @@ public class AestheticCategory
 {
     public AestheticType aestheticType;
     public List<Sprite> spriteList=new ();
+    public SpriteRenderer spriteRenderer;
 }
 public enum AestheticType
 {
