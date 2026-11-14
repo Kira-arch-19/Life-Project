@@ -1,38 +1,40 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[RequireComponent(typeof(PlayerMovement))]
 public class PlayerMovementInput : MonoBehaviour
 {
-    // Assegna nell'Inspector l'azione Move.
     [SerializeField] private InputActionReference moveAction;
 
-    private PlayerMovement movement;
+    private NetworkPlayer networkPlayer;
 
     private void Awake()
     {
-        movement = GetComponent<PlayerMovement>();
+        networkPlayer = GetComponent<NetworkPlayer>();
     }
 
     private void OnEnable()
     {
-        if (moveAction == null || moveAction.action == null)
+        if (networkPlayer == null ||
+            moveAction == null ||
+            moveAction.action == null)
         {
-            Debug.LogError("Assegna l'azione Move nell'Inspector.", this);
+            Debug.LogError(
+                "Assegna l'azione Move e aggiungi NetworkPlayer.",
+                this);
+
             enabled = false;
             return;
         }
 
-        // Questo componente gestisce l'attivazione dell'azione Move.
         moveAction.action.Enable();
     }
 
     private void Update()
     {
-        // La stessa azione riceve input da tastiera e joystick virtuale.
         Vector2 input = moveAction.action.ReadValue<Vector2>();
 
-        movement.SetMoveInput(input);
+        // NetworkPlayer invierà questa direzione al server.
+        networkPlayer.SetMoveInput(input);
     }
 
     private void OnDisable()
@@ -40,7 +42,13 @@ public class PlayerMovementInput : MonoBehaviour
         if (moveAction != null && moveAction.action != null)
             moveAction.action.Disable();
 
-        if (movement != null)
-            movement.SetMoveInput(Vector2.zero);
+        if (networkPlayer != null)
+            networkPlayer.SetMoveInput(Vector2.zero);
+    }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus && networkPlayer != null)
+            networkPlayer.SetMoveInput(Vector2.zero);
     }
 }
