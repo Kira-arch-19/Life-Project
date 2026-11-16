@@ -1,5 +1,9 @@
 
-# Unity
+# ==========================================
+# LIFE PROJECT - Unity + ASP.NET Core
+# ==========================================
+
+# Unity - File generati automaticamente
 [Ll]ibrary/
 [Tt]emp/
 [Oo]bj/
@@ -14,12 +18,21 @@
 .vs/
 .vscode/
 .idea/
-*.csproj
-*.sln
-*.slnx
+
+# Ignora solo i progetti generati da Unity
+# nella cartella principale del repository
+/*.csproj
+/*.sln
+/*.slnx
+
 *.suo
 *.user
 *.userprefs
+
+# .NET - File generati dalla compilazione
+[Bb]in/
+[Oo]bj/
+TestResults/
 
 # File temporanei
 *.tmp
@@ -36,3 +49,7 @@ Thumbs.db
 !.env.example
 *.pfx
 *.key
+
+# Configurazioni locali ASP.NET Core
+**/appsettings.Development.local.json
+**/appsettings.Local.json
