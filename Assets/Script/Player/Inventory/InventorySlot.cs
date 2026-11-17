@@ -3,8 +3,11 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// Rappresenta uno slot occupato dell'inventario.
-/// Contiene un tipo di oggetto e la sua quantità.
+/// Rappresenta uno stack di oggetti nell'inventario.
+/// Gestisce il tipo di oggetto e la quantità contenuta.
+///
+/// Non gestisce la lista degli slot:
+/// questa responsabilità appartiene a PlayerInventory.
 /// </summary>
 [Serializable]
 public class InventorySlot
@@ -13,52 +16,68 @@ public class InventorySlot
     [SerializeField] private int quantity;
 
     /// <summary>
-    /// Oggetto contenuto nello slot.
+    /// Oggetto presente nello slot.
     /// </summary>
     public ItemDefinition Item => item;
 
     /// <summary>
-    /// Quantità presente nello slot.
+    /// Quantità attuale di oggetti.
     /// </summary>
     public int Quantity => quantity;
 
     /// <summary>
-    /// Spazio ancora disponibile nello stack.
+    /// Indica se lo slot è vuoto.
     /// </summary>
-    public int FreeSpace => item.MaxStack - quantity;
-   /// <summary>
-   /// Restituisce true se lo slot è vuoto.
-   /// </summary>
     public bool IsEmpty => quantity <= 0;
+
     /// <summary>
-    /// Crea uno slot con un oggetto e una quantità.
+    /// Spazio disponibile nello stack.
+    /// </summary>
+    public int FreeSpace =>
+        item == null
+            ? 0
+            : Mathf.Max(0, item.MaxStack - quantity);
+
+    /// <summary>
+    /// Crea uno slot verificando che l'oggetto esista
+    /// e che la quantità rispetti MaxStack.
     /// </summary>
     public InventorySlot(ItemDefinition item, int quantity)
     {
+        if (item == null)
+            throw new ArgumentNullException(nameof(item));
+
+        if (quantity <= 0 || quantity > item.MaxStack)
+            throw new ArgumentOutOfRangeException(nameof(quantity));
+
         this.item = item;
         this.quantity = quantity;
     }
-    /// <summary>
-/// Riduce la quantità presente nello slot.
-/// Restituisce false se la quantità richiesta
-/// non è valida oppure supera quella disponibile.
-/// </summary>
-public bool TryDecrease(int amount)
-{
-    if (amount <= 0 || amount >quantity )
-        return false;
 
-    quantity -= amount;
-
-    return true;
-}
     /// <summary>
-    /// Aumenta la quantità nello slot.
-    /// Il chiamante deve rispettare MaxStack.
+    /// Prova ad aumentare la quantità.
+    /// Non permette di superare MaxStack.
     /// </summary>
-    public void Increase(int amount)
+    public bool TryIncrease(int amount)
     {
+        if (amount <= 0 || amount > FreeSpace)
+            return false;
+
         quantity += amount;
+        return true;
     }
 
+    /// <summary>
+    /// Prova a diminuire la quantità.
+    /// Non permette di rimuovere più oggetti
+    /// di quelli presenti nello slot.
+    /// </summary>
+    public bool TryDecrease(int amount)
+    {
+        if (amount <= 0 || amount > quantity)
+            return false;
+
+        quantity -= amount;
+        return true;
+    }
 }

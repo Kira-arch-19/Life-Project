@@ -121,7 +121,7 @@ public class PlayerInventory : MonoBehaviour
                 slot.FreeSpace
             );
 
-            slot.Increase(toAdd);
+            slot.TryIncrease(toAdd);
             remaining -= toAdd;
 
             if (remaining == 0)
