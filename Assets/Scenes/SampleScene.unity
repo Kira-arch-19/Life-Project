@@ -299,7 +299,7 @@ GameObject:
   - component: {fileID: 97831679}
   - component: {fileID: 97831678}
   m_Layer: 5
-  m_Name: ItemDetails
+  m_Name: ItemDetailsPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -496,7 +496,7 @@ GameObject:
   - component: {fileID: 130024412}
   - component: {fileID: 130024413}
   m_Layer: 5
-  m_Name: InventoryUI
+  m_Name: InventoryUIManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -638,7 +638,7 @@ GameObject:
   - component: {fileID: 313740169}
   - component: {fileID: 313740168}
   m_Layer: 5
-  m_Name: ItemDesc
+  m_Name: ItemDescTXT
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1475,7 +1475,7 @@ GameObject:
   - component: {fileID: 806345434}
   - component: {fileID: 806345433}
   m_Layer: 5
-  m_Name: ItemSelect
+  m_Name: ItemSelectTXT
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2072,7 +2072,7 @@ GameObject:
   - component: {fileID: 1178442151}
   - component: {fileID: 1178442156}
   m_Layer: 5
-  m_Name: Canvas
+  m_Name: InventoryCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
